@@ -1,0 +1,30 @@
+name: ACEest Fitness CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Build & Lint
+        run: |
+          pip install -r requirements.txt
+          python -m compileall . # Syntax check
+
+      - name: Run Automated Testing (Pytest)
+        run: pytest test_app.py
+
+      - name: Docker Image Assembly
+        run: docker build -t aceest-fitness:latest .
