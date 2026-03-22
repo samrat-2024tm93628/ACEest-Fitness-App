@@ -3,20 +3,22 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Pull code from the GitHub Repository [cite: 19]
+                // Pulls code from GitHub
                 checkout scm
             }
         }
         stage('Clean Build') {
             steps {
-                // Ensure the environment compiles correctly [cite: 19]
-                sh 'pip install -r requirements.txt'
+                // On Windows, use 'bat' instead of 'sh'
+                // Also, Windows usually just uses 'python' instead of 'python3'
+                bat 'python -m venv venv'
+                bat 'venv\\Scripts\\activate && pip install -r requirements.txt'
             }
         }
         stage('Quality Gate') {
             steps {
-                // Perform secondary validation [cite: 20]
-                sh 'pytest test_app.py'
+                // Run tests using the Windows virtual env path
+                bat 'venv\\Scripts\\activate && pytest test_app.py'
             }
         }
     }
