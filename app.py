@@ -80,6 +80,17 @@ def save_client():
     conn.close()
     return jsonify({"message": "Client data persisted to SQLite"}), 201
 
+@app.route('/status', methods=['GET'])
+def get_gym_status():
+    """Advanced metrics for gym capacity management."""
+    metrics = {
+        "capacity": 150,
+        "current_utilization": "85%",
+        "status": "Peak Hours",
+        "recommendation": "Suggest off-peak training for new joiners"
+    }
+    return jsonify(metrics), 200
+
 if __name__ == '__main__':
     # host='0.0.0.0' is required for Docker to expose the port
     app.run(host='0.0.0.0', port=5000)
