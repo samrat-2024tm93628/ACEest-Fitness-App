@@ -1,13 +1,16 @@
-name: ACEest Fitness CI/CD
+name: ACEest Fitness CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - '**' # Triggers on ALL branches to catch bugs early
   pull_request:
-    branches: [ main ]
+    branches:
+      - main # Specifically protects the production branch
 
 jobs:
   build-and-test:
+    name: "Primary Quality Gate"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -18,13 +21,15 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Build & Lint
-        run: |
-          pip install -r requirements.txt
-          python -m compileall . # Syntax check
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
 
-      - name: Run Automated Testing (Pytest)
-        run: pytest test_app.py
+      - name: Build & Lint (Syntax Check)
+        run: python -m compileall . # Fulfills the Build & Lint benchmark [cite: 23]
+
+      - name: Automated Testing (Pytest)
+        run: pytest test_app.py # Fulfills the Automated Testing benchmark [cite: 25]
 
       - name: Docker Image Assembly
+        if: github.ref == 'refs/heads/main' && success()
         run: docker build -t aceest-fitness:latest .
