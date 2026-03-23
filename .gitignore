@@ -1,0 +1,29 @@
+# === SQLite Database ===
+# Auto-generated at runtime by init_db() — do not commit
+*.db
+*.sqlite
+*.sqlite3
+
+# === Python ===
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# === Virtual Environment ===
+venv/
+.env/
+env/
+
+# === Environment Variables ===
+.env
+
+# === Docker ===
+*.tar
+
+# === OS Files ===
+.DS_Store
+Thumbs.db

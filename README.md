@@ -77,20 +77,61 @@ The API will be available at `http://localhost:5000`.
 pytest test_app.py
 ```
 
-### Run with Verbose Output
+### Run with Verbose Output (recommended)
 ```bash
 pytest test_app.py -v
 ```
 
-### Run a Single Test
+### Run by Route Group
 ```bash
-pytest test_app.py::test_health_check -v
+# Health check tests
+pytest test_app.py -v -k "health"
+
+# Programs tests
+pytest test_app.py -v -k "programs"
+
+# BMI calculation tests (includes edge cases)
+pytest test_app.py -v -k "bmi"
+
+# CSV export tests
+pytest test_app.py -v -k "csv"
+
+# Client persistence tests
+pytest test_app.py -v -k "client"
+
+# Gym status tests
+pytest test_app.py -v -k "status"
 ```
 
 ### Syntax / Lint Check (mirrors CI)
 ```bash
 python -m compileall .
 ```
+
+### Test Coverage Summary
+The test suite contains **20 test cases** across all 6 API endpoints:
+
+| # | Test Name | Route | Type |
+|---|-----------|-------|------|
+| 1 | `test_health_check` | `GET /health` | Status + fields |
+| 2 | `test_get_all_programs_status` | `GET /programs` | Status |
+| 3 | `test_get_all_programs_content` | `GET /programs` | All 3 programs present |
+| 4 | `test_programs_have_required_fields` | `GET /programs` | Schema validation |
+| 5 | `test_bmi_calculation` | `POST /calculate` | Correct BMI value |
+| 6 | `test_bmi_response_has_message` | `POST /calculate` | Field presence |
+| 7 | `test_bmi_missing_payload_returns_400` | `POST /calculate` | Edge case |
+| 8 | `test_bmi_missing_weight_returns_400` | `POST /calculate` | Edge case |
+| 9 | `test_bmi_missing_height_returns_400` | `POST /calculate` | Edge case |
+| 10 | `test_bmi_no_json_returns_400` | `POST /calculate` | Edge case |
+| 11 | `test_export_csv_status` | `GET /export/csv` | Status |
+| 12 | `test_export_csv_content_type` | `GET /export/csv` | `text/csv` MIME type |
+| 13 | `test_export_csv_has_header_row` | `GET /export/csv` | CSV structure |
+| 14 | `test_export_csv_has_program_data` | `GET /export/csv` | Data integrity |
+| 15 | `test_save_client_status` | `POST /client` | Status 201 |
+| 16 | `test_save_client_response_message` | `POST /client` | Confirmation message |
+| 17 | `test_gym_status_returns_200` | `GET /status` | Status |
+| 18 | `test_gym_status_has_capacity` | `GET /status` | Capacity is int |
+| 19 | `test_gym_status_has_required_fields` | `GET /status` | All metric fields |
 
 ---
 
