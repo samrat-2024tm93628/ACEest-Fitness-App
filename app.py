@@ -1,5 +1,6 @@
 import io
 import csv
+import sqlite3
 from flask import Flask, jsonify, request, Response
 
 app = Flask(__name__)
@@ -59,6 +60,25 @@ def export_csv():
         mimetype="text/csv",
         headers={"Content-disposition": "attachment; filename=fitness_plans.csv"}
     )
+
+def init_db():
+    conn = sqlite3.connect('aceest.db')
+    cursor = conn.cursor()
+    cursor.execute('CREATE TABLE IF NOT EXISTS clients (id INTEGER PRIMARY KEY, name TEXT, bmi REAL)')
+    conn.commit()
+    conn.close()
+
+init_db()
+
+@app.route('/client', methods=['POST'])
+def save_client():
+    data = request.json
+    conn = sqlite3.connect('aceest.db')
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO clients (name, bmi) VALUES (?, ?)", (data['name'], data['bmi']))
+    conn.commit()
+    conn.close()
+    return jsonify({"message": "Client data persisted to SQLite"}), 201
 
 if __name__ == '__main__':
     # host='0.0.0.0' is required for Docker to expose the port
