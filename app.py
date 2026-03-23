@@ -1,4 +1,6 @@
-from flask import Flask, jsonify, request
+import io
+import csv
+from flask import Flask, jsonify, request, Response
 
 app = Flask(__name__)
 
@@ -42,6 +44,21 @@ def calculate_bmi():
     height_m = data['height'] / 100
     bmi = round(data['weight'] / (height_m ** 2), 2)
     return jsonify({"bmi": bmi, "message": "Stay fit!"}), 200
+
+@app.route('/export/csv', methods=['GET'])
+def export_csv():
+    """Requirement: Data modularization and export."""
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Program', 'Workout', 'Diet'])
+    for name, details in PROGRAMS.items():
+        writer.writerow([name, details['workout'], details['diet']])
+    
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-disposition": "attachment; filename=fitness_plans.csv"}
+    )
 
 if __name__ == '__main__':
     # host='0.0.0.0' is required for Docker to expose the port
