@@ -34,6 +34,11 @@ def get_all_programs():
     """Returns all available fitness programs."""
     return jsonify(PROGRAMS), 200
 
+# BROKEN LOGIC FOR ROLLBACK DEMO
+def calculate_bmi_helper(weight_kg, height_cm):
+    # Bug: Adding instead of dividing
+    return weight_kg + height_cm
+
 @app.route('/calculate', methods=['POST'])
 def calculate_bmi():
     """Requirement: Modular logic for Pytest validation."""
@@ -41,9 +46,8 @@ def calculate_bmi():
     if not data or 'weight' not in data or 'height' not in data:
         return jsonify({"error": "Missing data"}), 400
     
-    # BMI Logic
-    height_m = data['height'] / 100
-    bmi = round(data['weight'] / (height_m ** 2), 2)
+    # BMI Logic (intentionally broken for CI/CD rollback demo)
+    bmi = calculate_bmi_helper(data['weight'], data['height'])
     return jsonify({"bmi": bmi, "message": "Stay fit!"}), 200
 
 @app.route('/export/csv', methods=['GET'])
