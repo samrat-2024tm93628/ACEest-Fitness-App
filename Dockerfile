@@ -1,18 +1,36 @@
-# Use an optimized, slim Python image for efficiency [cite: 40]
-FROM python:3.9-slim
+# syntax=docker/dockerfile:1.7
 
-# Set working directory
+# ---- Stage 1: build deps into an isolated prefix ----
+FROM python:3.11-slim AS build
+
 WORKDIR /app
 
-# Install dependencies first (for better caching)
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-# Copy application source code
-COPY . .
 
-# Expose the Flask port
+# ---- Stage 2: minimal runtime image ----
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    DB_PATH=/data/aceest.db \
+    PORT=5000
+
+RUN useradd --create-home --uid 1001 ace \
+    && mkdir -p /data \
+    && chown -R ace:ace /data
+
+WORKDIR /app
+
+COPY --from=build /install /usr/local
+COPY --chown=ace:ace app.py ./
+
+USER ace
+
 EXPOSE 5000
 
-# Command to launch the API
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD python -c "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:5000/health').status==200 else sys.exit(1)" || exit 1
+
 CMD ["python", "app.py"]
