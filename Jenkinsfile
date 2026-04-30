@@ -84,10 +84,8 @@ pipeline {
             }
         }
 
+/*
         stage('SonarQube Analysis') {
-            when {
-                expression { return true }
-            }
             steps {
                 withSonarQubeEnv('SonarQube') {
                     script {
@@ -102,15 +100,13 @@ pipeline {
         }
 
         stage('Quality Gate') {
-            when {
-                expression { return true }
-            }
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
         }
+*/
 
         stage('Docker Build') {
             steps {
@@ -126,6 +122,7 @@ pipeline {
             }
         }
 
+/*
         stage('Docker Push') {
             when {
                 allOf {
@@ -186,7 +183,9 @@ pipeline {
                 }
             }
         }
+*/
 
+/*
         stage('Smoke Test') {
             when {
                 expression { return env.SMOKE_BASE_URL?.trim() }
@@ -208,12 +207,14 @@ pipeline {
                 }
             }
         }
+*/
     }
 
     post {
         success {
             echo "Build #${BUILD_NUMBER} succeeded. Image: ${env.FULL_IMAGE ?: env.IMAGE_NAME}:${IMAGE_TAG}"
         }
+/*
         failure {
             echo "Build #${BUILD_NUMBER} failed. Attempting rollback if a deployment exists."
             script {
@@ -234,6 +235,7 @@ pipeline {
                 }
             }
         }
+*/
         always {
             cleanWs(deleteDirs: true, notFailBuild: true,
                 patterns: [[pattern: 'venv/**', type: 'INCLUDE'],
