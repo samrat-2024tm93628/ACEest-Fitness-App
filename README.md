@@ -190,3 +190,125 @@ Production remains on last stable Git Tag (e.g., v3.2.4)
        ▼
 Fix is committed → merge to main → all gates pass → new tag released
 ```
+
+---
+
+# Assignment 2 — Full DevOps Lifecycle
+
+Assignment 2 extends the Assignment 1 baseline with a production-grade
+pipeline: containerization, static analysis, container orchestration,
+zero-downtime deployment, and automated rollback.
+
+## What's new vs Assignment 1
+
+| Capability | Assignment 1 | Assignment 2 |
+|---|---|---|
+| Dependencies | unpinned (`flask`, `pytest`) | pinned `requirements.txt` + `requirements-dev.txt` |
+| Config | hardcoded | env-driven (`DB_PATH`, `PORT`, `.env.example`) |
+| Coverage | not measured | **96%** via `pytest-cov` → `coverage.xml` |
+| Integration tests | none | `tests/integration/test_smoke.py` (live URL) |
+| Dockerfile | single-stage, root | multi-stage, non-root user, `HEALTHCHECK` |
+| Local stack | none | `docker-compose.yml` (app + SonarQube + Postgres) |
+| Static analysis | none | SonarQube scan + Quality Gate enforcement |
+| Jenkins pipeline | 3 Windows-only stages | 9 cross-platform stages w/ Sonar, Docker, K8s, smoke, auto-rollback |
+| GitHub Actions | lint + test + build | + coverage upload + GHCR push |
+| Orchestration | none | Kubernetes manifests: namespace, configmap, secret, deployment (probes + rolling), service, HPA |
+| Rollback | implicit (no image built) | explicit `kubectl rollout undo` + `scripts/rollback.sh` + Jenkins `post.failure` |
+| Autoscaling | none | HPA 2–6 replicas at 70% CPU |
+
+## Local stack (one command)
+
+```bash
+cp .env.example .env
+docker compose up -d
+# App        : http://localhost:5000/health
+# SonarQube  : http://localhost:9000  (admin / admin first login)
+```
+
+## Kubernetes demo (Minikube)
+
+```bash
+minikube start --driver=docker
+eval $(minikube docker-env)
+docker build -t aceest-fitness:latest .
+./scripts/deploy.sh                                       # rolling deploy
+kubectl get pods -n aceest -w
+minikube service aceest-nodeport -n aceest --url
+
+# rolling update + rollback demo
+docker build -t aceest-fitness:v2 .
+./scripts/deploy.sh v2
+kubectl rollout history deployment/aceest -n aceest
+./scripts/rollback.sh
+
+# autoscaling demo
+kubectl get hpa -n aceest
+```
+
+## Project structure (Assignment 2 additions)
+
+```
+.
+├── app.py                       # env-driven config, lazy DB init
+├── requirements.txt             # pinned
+├── requirements-dev.txt         # pytest, pytest-cov, coverage
+├── pytest.ini                   # coverage config + smoke marker
+├── Dockerfile                   # multi-stage, non-root, healthcheck
+├── .dockerignore
+├── docker-compose.yml           # app + sonarqube + sonar-db
+├── sonar-project.properties     # SonarQube config
+├── Jenkinsfile                  # full cross-platform pipeline
+├── .github/workflows/main.yml   # test + GHCR push
+├── tests/integration/test_smoke.py
+├── k8s/
+│   ├── namespace.yaml
+│   ├── configmap.yaml
+│   ├── secret.yaml
+│   ├── deployment.yaml          # 3 replicas, RollingUpdate, probes
+│   ├── service.yaml             # ClusterIP + NodePort
+│   └── hpa.yaml                 # 2..6 replicas @ 70% CPU
+├── scripts/
+│   ├── deploy.sh
+│   ├── rollback.sh
+│   └── smoke-test.sh
+└── docs/
+    ├── architecture.md          # logical diagram + lifecycle mapping
+    ├── pipeline-flow.md         # CI/CD stage diagram
+    ├── deployment-strategies.md # rolling / blue-green / canary / shadow
+    ├── screenshot-checklist.md  # exact images to capture for the report
+    └── viva-prep.md             # likely questions + grounded answers
+```
+
+## Pipeline at a glance
+
+[Jenkinsfile](Jenkinsfile) — 9 stages, gated on env so the same file works
+on a barebones Jenkins or a fully-configured one:
+
+```
+Checkout → Setup → Lint → Test+Coverage → SonarQube → Quality Gate
+        → Docker Build → Docker Push → Deploy to K8s → Smoke Test
+        ⤷ post.failure: kubectl rollout undo
+```
+
+See [docs/pipeline-flow.md](docs/pipeline-flow.md) for the full diagram and
+gating rules, and [docs/architecture.md](docs/architecture.md) for the
+system architecture.
+
+## Quality gates
+
+| Gate | Threshold | Enforcement |
+|---|---|---|
+| Lint | 0 syntax errors | Jenkins `Lint` stage |
+| Unit tests | 19/19 pass | Jenkins `Test + Coverage` stage |
+| Coverage | currently 96% | SonarQube quality gate |
+| Static analysis | bugs = 0, vulns = 0 | `waitForQualityGate abortPipeline:true` |
+| Smoke tests | live `/health`, `/programs`, `/status` pass | Jenkins `Smoke Test` stage |
+| Rollout | `kubectl rollout status` succeeds in 2 min | otherwise auto `rollout undo` |
+
+## Report deliverables
+
+- Architecture diagram → [docs/architecture.md](docs/architecture.md)
+- Pipeline diagram → [docs/pipeline-flow.md](docs/pipeline-flow.md)
+- Deployment-strategy comparison → [docs/deployment-strategies.md](docs/deployment-strategies.md)
+- Screenshot checklist (mapped to rubric) → [docs/screenshot-checklist.md](docs/screenshot-checklist.md)
+- Viva prep with grounded answers → [docs/viva-prep.md](docs/viva-prep.md)
