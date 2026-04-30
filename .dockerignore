@@ -1,0 +1,49 @@
+# Version control
+.git
+.gitignore
+.github
+
+# Python
+__pycache__
+*.py[cod]
+*.pyo
+*.egg-info
+.pytest_cache
+.coverage
+htmlcov
+coverage.xml
+
+# Virtual environments
+venv
+env
+.venv
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Local SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Tests (kept out of runtime image; CI runs them separately)
+tests
+test_*.py
+
+# Editor / OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Docs
+README.md
+docs
+*.md
+
+# Build artifacts
+dist
+build
+*.tar

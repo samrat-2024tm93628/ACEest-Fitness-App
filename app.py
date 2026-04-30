@@ -1,11 +1,14 @@
 import io
+import os
 import csv
 import sqlite3
 from flask import Flask, jsonify, request, Response
 
 app = Flask(__name__)
 
-# Moving your original data store into the Web App logic
+DB_PATH = os.environ.get("DB_PATH", "aceest.db")
+PORT = int(os.environ.get("PORT", "5000"))
+
 PROGRAMS = {
     "Fat Loss (FL)": {
         "workout": "Mon: 5x5 Back Squat + AMRAP\nTue: EMOM 20min Assault Bike...",
@@ -24,65 +27,66 @@ PROGRAMS = {
     }
 }
 
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('CREATE TABLE IF NOT EXISTS clients (id INTEGER PRIMARY KEY, name TEXT, bmi REAL)')
+    conn.commit()
+    conn.close()
+
+
 @app.route('/health', methods=['GET'])
 def health():
-    """Requirement: Secondary validation layer for Jenkins."""
+    """Liveness/readiness probe target for Jenkins and Kubernetes."""
     return jsonify({"status": "healthy", "service": "ACEest Fitness"}), 200
+
 
 @app.route('/programs', methods=['GET'])
 def get_all_programs():
-    """Returns all available fitness programs."""
     return jsonify(PROGRAMS), 200
+
 
 @app.route('/calculate', methods=['POST'])
 def calculate_bmi():
-    """Requirement: Modular logic for Pytest validation."""
-    data = request.get_json()
+    data = request.get_json(silent=True)
     if not data or 'weight' not in data or 'height' not in data:
         return jsonify({"error": "Missing data"}), 400
-    
-    # BMI Logic
+
     height_m = data['height'] / 100
     bmi = round(data['weight'] / (height_m ** 2), 2)
     return jsonify({"bmi": bmi, "message": "Stay fit!"}), 200
 
+
 @app.route('/export/csv', methods=['GET'])
 def export_csv():
-    """Requirement: Data modularization and export."""
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(['Program', 'Workout', 'Diet'])
     for name, details in PROGRAMS.items():
         writer.writerow([name, details['workout'], details['diet']])
-    
+
     return Response(
         output.getvalue(),
         mimetype="text/csv",
         headers={"Content-disposition": "attachment; filename=fitness_plans.csv"}
     )
 
-def init_db():
-    conn = sqlite3.connect('aceest.db')
-    cursor = conn.cursor()
-    cursor.execute('CREATE TABLE IF NOT EXISTS clients (id INTEGER PRIMARY KEY, name TEXT, bmi REAL)')
-    conn.commit()
-    conn.close()
-
-init_db()
 
 @app.route('/client', methods=['POST'])
 def save_client():
+    init_db()
     data = request.json
-    conn = sqlite3.connect('aceest.db')
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("INSERT INTO clients (name, bmi) VALUES (?, ?)", (data['name'], data['bmi']))
     conn.commit()
     conn.close()
     return jsonify({"message": "Client data persisted to SQLite"}), 201
 
+
 @app.route('/status', methods=['GET'])
 def get_gym_status():
-    """Advanced metrics for gym capacity management."""
     metrics = {
         "capacity": 150,
         "current_utilization": "85%",
@@ -91,6 +95,7 @@ def get_gym_status():
     }
     return jsonify(metrics), 200
 
+
 if __name__ == '__main__':
-    # host='0.0.0.0' is required for Docker to expose the port
-    app.run(host='0.0.0.0', port=5000)
+    init_db()
+    app.run(host='0.0.0.0', port=PORT)
