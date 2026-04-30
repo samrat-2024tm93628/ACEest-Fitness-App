@@ -86,7 +86,7 @@ pipeline {
 
         stage('SonarQube Analysis') {
             when {
-                expression { return env.SONAR_ENABLED == 'true' }
+                expression { return true }
             }
             steps {
                 withSonarQubeEnv('SonarQube') {
@@ -103,7 +103,7 @@ pipeline {
 
         stage('Quality Gate') {
             when {
-                expression { return env.SONAR_ENABLED == 'true' }
+                expression { return true }
             }
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
